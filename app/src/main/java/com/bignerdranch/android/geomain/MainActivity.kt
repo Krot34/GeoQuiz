@@ -1,5 +1,7 @@
 package com.bignerdranch.android.geomain
 
+import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.widget.Button
@@ -7,15 +9,20 @@ import android.widget.ImageButton
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.result.ActivityResult
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.lifecycle.ViewModelProvider
 
 private const val TAG = "MainActivity"
 private const val KEY_INDEX = "index"
+private const val REQUEST_NAME_CHEAT = "CheatActivity"
 
 class MainActivity : ComponentActivity() {
 
     private lateinit var trueButton: Button
     private lateinit var falseButton: Button
+    private lateinit var cheatButton: Button
     private lateinit var nextButton: ImageButton
     private lateinit var backButton: ImageButton
     private lateinit var questionTextView: TextView
@@ -23,6 +30,9 @@ class MainActivity : ComponentActivity() {
     private val quizViewModel: QuizViewModel by lazy {
         ViewModelProvider(this)[QuizViewModel::class.java]
     }
+
+    private var isCheater = false
+    private var launcher: ActivityResultLauncher<Intent>? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -32,11 +42,26 @@ class MainActivity : ComponentActivity() {
         val currentIndex = savedInstanceState?.getInt(KEY_INDEX, 0) ?: 0
         quizViewModel.currentIndex = currentIndex
 
+        isCheater = intent.getBooleanExtra(EXTRA_ANSWER_SHOWN, false)
+        if (isCheater) {
+            quizViewModel.cheatedQuestionsIndexes += currentIndex
+        }
+
         trueButton = findViewById(R.id.true_button)
         falseButton = findViewById(R.id.false_button)
         nextButton = findViewById(R.id.next_button)
         backButton = findViewById(R.id.prev_button)
+        cheatButton = findViewById(R.id.cheat_button)
         questionTextView = findViewById(R.id.question_text_view)
+
+        manageButtonActivation()
+        updateQuestion()
+
+        launcher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result: ActivityResult ->
+            if (result.resultCode == RESULT_OK) {
+                result.data?.getBooleanExtra(REQUEST_NAME_CHEAT, false) ?: false
+            }
+        }
 
         trueButton.setOnClickListener {
             checkAnswer(true)
@@ -60,8 +85,10 @@ class MainActivity : ComponentActivity() {
             manageButtonActivation()
         }
 
-        manageButtonActivation()
-        updateQuestion()
+        cheatButton.setOnClickListener {
+            val answerIsTrue = quizViewModel.currentQuestionAnswer
+            launcher?.launch(CheatActivity.newIntent(this, answerIsTrue))
+        }
     }
 
     override fun onStart() {
@@ -79,11 +106,12 @@ class MainActivity : ComponentActivity() {
         Log.d(TAG, "onPause() called")
     }
 
-    override fun onSaveInstanceState(savedInstanceState: Bundle) {
-        super.onSaveInstanceState(savedInstanceState)
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
         Log.i(TAG, "onSaveInstanceState")
-        savedInstanceState.putInt(KEY_INDEX, quizViewModel.currentIndex)
-        savedInstanceState.putIntArray(KEY_INDEX, quizViewModel.answeredQuestionsIndexes)
+        outState.putInt(KEY_INDEX, quizViewModel.currentIndex)
+        outState.putIntArray(KEY_INDEX, quizViewModel.answeredQuestionsIndexes)
+        outState.putIntArray(KEY_INDEX, quizViewModel.cheatedQuestionsIndexes)
     }
 
     override fun onStop() {
@@ -107,7 +135,11 @@ class MainActivity : ComponentActivity() {
 
         quizViewModel.answeredQuestionsIndexes += quizViewModel.currentIndex
 
-        if (userAnswer == correctAnswer) {
+        if (quizViewModel.currentQuestionIsCheated && userAnswer == correctAnswer) {
+            messageResId = R.string.judgment_toast
+            quizViewModel.correctAnswersCount++
+        }
+        else if (userAnswer == correctAnswer) {
             messageResId = R.string.correct_toast
             quizViewModel.correctAnswersCount++
         } else {
@@ -123,7 +155,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun manageButtonActivation() {
-        if (quizViewModel.answeredQuestionsIndexes.contains(quizViewModel.currentIndex)) {
+        if (quizViewModel.currentQuestionIsAnswered) {
             trueButton.isEnabled = false
             falseButton.isEnabled = false
         } else {
@@ -138,5 +170,13 @@ class MainActivity : ComponentActivity() {
 
         Toast.makeText(this, messageResId, Toast.LENGTH_SHORT)
             .show()
+    }
+
+    companion object {
+        fun newIntent(packageContext: Context): Intent {
+            return Intent(packageContext, MainActivity::class.java).apply {
+                putExtra(EXTRA_ANSWER_SHOWN, true)
+            }
+        }
     }
 }
