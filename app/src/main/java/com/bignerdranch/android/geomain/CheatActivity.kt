@@ -46,8 +46,6 @@ class CheatActivity : AppCompatActivity() {
 
             launcher?.launch(MainActivity.newIntent(this))
         }
-//        onBackPressedDispatcher.onBackPressed()
-
     }
 
     companion object {

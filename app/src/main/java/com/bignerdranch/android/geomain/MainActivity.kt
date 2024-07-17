@@ -15,7 +15,9 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.lifecycle.ViewModelProvider
 
 private const val TAG = "MainActivity"
-private const val KEY_INDEX = "index"
+private const val KEY_INDEX_CURRENT = "current"
+private const val KEY_INDEX_ANSWERED = "answered"
+private const val KEY_INDEX_CHEATED = "cheated"
 private const val REQUEST_NAME_CHEAT = "CheatActivity"
 
 class MainActivity : ComponentActivity() {
@@ -39,7 +41,7 @@ class MainActivity : ComponentActivity() {
         setContentView(R.layout.activity_main)
         Log.d(TAG, "onCreate(Bundle?) called")
 
-        val currentIndex = savedInstanceState?.getInt(KEY_INDEX, 0) ?: 0
+        val currentIndex = savedInstanceState?.getInt(KEY_INDEX_CURRENT, 0) ?: 0
         quizViewModel.currentIndex = currentIndex
 
         isCheater = intent.getBooleanExtra(EXTRA_ANSWER_SHOWN, false)
@@ -54,8 +56,18 @@ class MainActivity : ComponentActivity() {
         cheatButton = findViewById(R.id.cheat_button)
         questionTextView = findViewById(R.id.question_text_view)
 
-        manageButtonActivation()
+//        val answeredQuestionsIndexes = savedInstanceState?.getIntArray(KEY_INDEX_ANSWERED)
+//        if (answeredQuestionsIndexes != null) {
+//            quizViewModel.answeredQuestionsIndexes = answeredQuestionsIndexes
+//        }
+//
+//        val cheatedQuestionsIndexes = savedInstanceState?.getIntArray(KEY_INDEX_CHEATED)
+//        if (cheatedQuestionsIndexes != null) {
+//            quizViewModel.cheatedQuestionsIndexes = cheatedQuestionsIndexes
+//        }
+
         updateQuestion()
+        manageButtonActivation()
 
         launcher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result: ActivityResult ->
             if (result.resultCode == RESULT_OK) {
@@ -109,9 +121,9 @@ class MainActivity : ComponentActivity() {
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         Log.i(TAG, "onSaveInstanceState")
-        outState.putInt(KEY_INDEX, quizViewModel.currentIndex)
-        outState.putIntArray(KEY_INDEX, quizViewModel.answeredQuestionsIndexes)
-        outState.putIntArray(KEY_INDEX, quizViewModel.cheatedQuestionsIndexes)
+        outState.putInt(KEY_INDEX_CURRENT, quizViewModel.currentIndex)
+        outState.putIntArray(KEY_INDEX_ANSWERED, quizViewModel.answeredQuestionsIndexes)
+        outState.putIntArray(KEY_INDEX_CHEATED, quizViewModel.cheatedQuestionsIndexes)
     }
 
     override fun onStop() {
