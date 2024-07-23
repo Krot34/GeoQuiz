@@ -1,7 +1,9 @@
 package com.bignerdranch.android.geomain
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.widget.Button
@@ -28,6 +30,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var nextButton: ImageButton
     private lateinit var backButton: ImageButton
     private lateinit var questionTextView: TextView
+    private lateinit var apiTextView: TextView
 
     private val quizViewModel: QuizViewModel by lazy {
         ViewModelProvider(this)[QuizViewModel::class.java]
@@ -36,6 +39,7 @@ class MainActivity : ComponentActivity() {
     private var isCheater = false
     private var launcher: ActivityResultLauncher<Intent>? = null
 
+    @SuppressLint("SetTextI18n")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -55,6 +59,9 @@ class MainActivity : ComponentActivity() {
         backButton = findViewById(R.id.prev_button)
         cheatButton = findViewById(R.id.cheat_button)
         questionTextView = findViewById(R.id.question_text_view)
+        apiTextView = findViewById(R.id.api_text_view)
+
+        apiTextView.text = "API level ${Build.VERSION.SDK_INT}"
 
 //        val answeredQuestionsIndexes = savedInstanceState?.getIntArray(KEY_INDEX_ANSWERED)
 //        if (answeredQuestionsIndexes != null) {
